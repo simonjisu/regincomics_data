@@ -2,7 +2,7 @@
 import readdata
 import matplotlib.pylab as plt
 import numpy as np
-from sklearn.metrics import confusion_matrix, accuracy_score, classification_report, roc_curve
+from sklearn.metrics import confusion_matrix, accuracy_score, classification_report, roc_curve, roc_auc_score
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.model_selection import cross_val_score, KFold
@@ -33,61 +33,50 @@ class Run(object):
         # CV settings
         self.cv = KFold(self.settings['n_kfold'])
         self.preference_max_depth = 0
+        self.classifier = None
 
     def forest(self):
-        model_forest = ExtraTreesClassifier(n_estimators=self.settings['n_estimator'])
+        self.classifier = 'Random Forest'
+        model_forest = ExtraTreesClassifier(criterion=self.settings['criterion'], n_estimators=self.settings['n_estimator'])
         model_forest.fit(self.train_X, self.train_y)
-        yhat = model_forest.predict(self.train_X)
-        con_mat = confusion_matrix(self.train_y, yhat)
-        fpr, tpr, thresholds = roc_curve(self.train_y, yhat)
-        score = cross_val_score(model_forest, self.train_X, self.train_y, scoring='accuracy', cv=self.cv)
-        mean_score = score.mean()
-        print('Corss Validation Score for model-Random Forest is {0:.4f}'.format(mean_score))
 
+        std = np.std([tree.feature_importances_ for tree in model_forest.estimators_], axis=0)
         importances = model_forest.feature_importances_
         indices = np.argsort(importances)[::-1]
         column_list = self.train_X.columns.tolist()
         gage = 0
-        print('==' * 40)
+
         print('Feature importance')
+        print('==' * 40)
         for f in range(self.train_X.shape[1]):
             if gage <= self.settings['accuracy_gage']:
-                print('==' * 40)
-                print('Feature importance')
                 print('{0}. feature {1}: {2} ({3:.6f})'.format(f + 1, indices[f], column_list[indices[f]], importances[indices[f]]))
                 gage += importances[indices[f]]
                 self.preference_max_depth += 1
 
-        if self.settings['report']:
-            print('==' * 40)
-            print('Training Result')
-            print('==' * 40)
-            print('Confusion Matrix')
-            print(con_mat)
-            print('--' * 40)
-            print('Classification Report')
-            print(classification_report(self.train_y, yhat, target_names=['notbuy', 'buy']))
-            print('--' * 40)
-            print('Accuracy Score')
-            print(accuracy_score(self.train_y, yhat))
-            print('--' * 40)
-            plt.plot(fpr, tpr)
-            plt.xlabel('Fall Out Rate')
-            plt.ylabel('Recall Rate')
-            plt.title('ROC Curve for model Random Forest(Training)')
-            plt.show()
+        plt.title("Feature importances")
+        plt.bar(range(self.train_X.shape[1]), importances[indices], color="r", yerr=std[indices], align="center")
+        plt.xticks(range(self.train_X.shape[1]), column_list[indices])
+        plt.xlim([-1, self.train_X.shape[1]])
+        plt.show()
 
         return model_forest
 
-
     def tree(self):
-        model_tree = DecisionTreeClassifier(criterion='gini', max_depth=self.preference_max_depth).fit(self.train_X, self.train_y)
-        yhat = model_tree.predict(self.train_X)
+        self.classifier = 'Decision Tree'
+        model_tree = DecisionTreeClassifier(criterion=self.settings['criterion'], max_depth=self.preference_max_depth)
+        model_tree.fit(self.train_X, self.train_y)
+        return model_tree
+
+    def CV_test(self, classifier):
+        yhat = classifier.predict(self.train_X)
         con_mat = confusion_matrix(self.train_y, yhat)
         fpr, tpr, thresholds = roc_curve(self.train_y, yhat)
-        score = cross_val_score(model_tree, self.train_X, self.train_y, scoring='accuracy', cv=self.cv)
+        score = cross_val_score(classifier, self.train_X, self.train_y, scoring='accuracy', cv=self.cv)
         mean_score = score.mean()
-        print('Corss Validation Score for model-Decision Tree is {0:.4f}'.format(mean_score))
+        auc_score = roc_auc_score(self.train_y, yhat)
+        print('ROC Auc Score for model-{0:} is {1:.4f}'.format(self.classifier, auc_score))
+        print('Corss Validation Score for model-{0:} is {1:.4f}'.format(self.classifier, mean_score))
 
         if self.settings['report']:
             print('==' * 40)
@@ -105,10 +94,8 @@ class Run(object):
             plt.plot(fpr, tpr)
             plt.xlabel('Fall Out Rate')
             plt.ylabel('Recall Rate')
-            plt.title('ROC Curve for model Random Forest(Training)')
+            plt.title('ROC Curve for model{}(Training)'.format(self.classifier))
             plt.show()
-
-        return model_tree
 
     def test(self, classifier):
         return classifier.predict(self.test_X)

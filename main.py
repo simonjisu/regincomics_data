@@ -4,9 +4,10 @@ import models
 settings = {'n_kfold': 10,
             'n_estimator': 10,
             'accuracy_gage': 0.8,
+            'criterion': 'gini',
             'report': False,
             'train_fileloc': './data/lezhin_dataset_v2_training.tsv',
-            'test_fileloc': './data/lezhin_dataset_v2_test_without_label.tsv'}
+            'test_fileloc': './data/lezhin_dataset_v2_test_without_label.tsv',}
 
 sess = models.Run(settings)
 sess.initiate()

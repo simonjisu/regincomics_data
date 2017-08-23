@@ -55,9 +55,8 @@ class Run(object):
                 self.preference_max_depth += 1
 
         plt.title("Feature importances")
-        plt.bar(range(self.train_X.shape[1]), importances[indices], color="r", yerr=std[indices], align="center")
-        plt.xticks(range(self.train_X.shape[1]), column_list[indices])
-        plt.xlim([-1, self.train_X.shape[1]])
+        plt.bar(range(self.train_X.shape[1])[0:20], importances[indices][0:20], color="r", yerr=std[indices][0:20], align="center")
+        plt.xticks(range(self.train_X.shape[1])[0:20], indices[0:20])
         plt.show()
 
         return model_forest

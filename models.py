@@ -2,7 +2,7 @@
 import readdata
 import matplotlib.pylab as plt
 import numpy as np
-from sklearn.metrics import confusion_matrix, accuracy_score, classification_report, roc_curve, roc_auc_score
+from sklearn.metrics import confusion_matrix, classification_report, roc_curve
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.model_selection import cross_val_score, KFold
@@ -15,7 +15,6 @@ class Run(object):
     def __init__(self, settings):
         self.settings = settings
 
-    def initiate(self):
         self.regin = readdata.Regin()
 
         # training data initiating
@@ -71,11 +70,12 @@ class Run(object):
         yhat = classifier.predict(self.train_X)
         con_mat = confusion_matrix(self.train_y, yhat)
         fpr, tpr, thresholds = roc_curve(self.train_y, yhat)
-        score = cross_val_score(classifier, self.train_X, self.train_y, scoring='accuracy', cv=self.cv)
-        mean_score = score.mean()
-        auc_score = roc_auc_score(self.train_y, yhat)
-        print('ROC Auc Score for model-{0:} is {1:.4f}'.format(self.classifier, auc_score))
-        print('Corss Validation Score for model-{0:} is {1:.4f}'.format(self.classifier, mean_score))
+        acc_score = cross_val_score(classifier, self.train_X, self.train_y, scoring='accuracy', cv=self.cv)
+        pre_score = cross_val_score(classifier, self.train_X, self.train_y, scoring='precision', cv=self.cv)
+        acc_score = acc_score.mean()
+        pre_score = pre_score.mean()
+        print('Precision Score(CV) for model-{0:} is {1:.4f}'.format(self.classifier, pre_score))
+        print('Accuracy for model-{0:} is {1:.4f}'.format(self.classifier, acc_score))
 
         if self.settings['report']:
             print('==' * 40)
@@ -87,13 +87,10 @@ class Run(object):
             print('Classification Report')
             print(classification_report(self.train_y, yhat, target_names=['notbuy', 'buy']))
             print('--' * 40)
-            print('Accuracy Score')
-            print(accuracy_score(self.train_y, yhat))
-            print('--' * 40)
             plt.plot(fpr, tpr)
             plt.xlabel('Fall Out Rate')
             plt.ylabel('Recall Rate')
-            plt.title('ROC Curve for model{}(Training)'.format(self.classifier))
+            plt.title('ROC Curve for model-{}(Training)'.format(self.classifier))
             plt.show()
 
     def test(self, classifier):

@@ -15,7 +15,7 @@
 ### Jupyter notebook link:
 [Link to Jupyter nbviewer](https://nbviewer.jupyter.org/github/simonjisu/regincomics_data/blob/master/Regin%20Comics%20Data%20Analysis.ipynb)
 
-##과정:
+## 과정:
 
 ### 전처리:
 만화에 대한 정보와 구매자에 대한 정보가 섞여 있는데, 구매자에 관한 정보(주요 작품 구매 여부) 일부를 구매자 성향으로 바꿔보는 시도를 해보았습니다.
